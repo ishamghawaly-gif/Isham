@@ -1,0 +1,27 @@
+name: Find Telegram chat ID
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  find-chat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read latest bot updates
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os, requests
+          token=os.environ["TELEGRAM_BOT_TOKEN"]
+          r=requests.get(f"https://api.telegram.org/bot{token}/getUpdates", timeout=20)
+          r.raise_for_status()
+          updates=r.json().get("result", [])
+          if not updates:
+              print("No updates found. Open your bot in Telegram, press START or send /start, then run this workflow again.")
+          for u in updates:
+              msg=u.get("message") or u.get("channel_post") or {}
+              chat=msg.get("chat", {})
+              if chat.get("id") is not None:
+                  print("TELEGRAM_CHAT_ID =", chat["id"])
+          PY
